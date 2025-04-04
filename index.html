@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graphique</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Graphique TeamsSpy</h1>
+    <canvas id="presenceChart" width="800" height="400"></canvas>
+
+    <script>
+        // Fonction pour récupérer les paramètres GET de l'URL
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        // Fonction principale pour générer le graphique
+        function generateChart(jsonData) {
+            const data = JSON.parse(jsonData);
+
+            const dates = Object.keys(data);
+            const people = {};
+            
+            // Organiser les données
+            dates.forEach(date => {
+                const dayData = data[date];
+                for (const person in dayData) {
+                    if (!people[person]) {
+                        people[person] = { label: person, data: [] };
+                    }
+                    const taux = parseFloat(dayData[person].TauxDisponibilite.replace('%', ''));
+                    people[person].data.push(taux);
+                }
+            });
+
+            // Préparer les datasets pour Chart.js
+            const datasets = Object.values(people).map(person => ({
+                label: person.label,
+                data: person.data,
+                borderColor: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+                fill: false
+            }));
+
+            // Dessiner le graphique
+            const ctx = document.getElementById('presenceChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Dates'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Taux de Présence (%)'
+                            },
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        // Vérifier si la variable "var" est présente dans l'URL
+        const base64Json = getQueryParam("var");
+        if (base64Json) {
+            try {
+                const decodedJson = atob(base64Json); // Décoder la base64
+                generateChart(decodedJson); // Générer le graphique avec les données décodées
+            } catch (error) {
+                console.error("Erreur lors du décodage de la variable 'var' :", error);
+            }
+        }
+    </script>
+</body>
+</html>
